@@ -51,12 +51,13 @@ Set the `RESEND_API_KEY` secret, and make sure the `ALLOWED_ORIGINS` list in eac
 
 ## Deployment
 
-Deployed on [Render](https://render.com/) as a **Web Service** from this repository:
+Deployed on [Render](https://render.com/) as a **Static Site** from this repository:
 
 - Build command: `npm install && npm run build`
-- Start command: `npm run preview -- --host 0.0.0.0 --port $PORT`
+- Publish directory: `dist`
+- Add a rewrite rule `/*` → `/index.html` so client-side routes work on refresh
 
-`vite preview` serves the production build and falls back to `index.html` for client-side routes, so deep links work on refresh. The committed `.env` supplies the Supabase configuration at build time, and new pushes to `main` auto-deploy.
+The committed `.env` supplies the Supabase configuration at build time, and new pushes to `main` auto-deploy.
 
 ## Live Site
 
