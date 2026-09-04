@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 // Allowed origins for CORS - restrict to production and preview domains
 const ALLOWED_ORIGINS = [
-  "https://algoarena.onrender.com",
+  "https://algoarenaquest.onrender.com",
   "http://localhost:8080",
   "http://localhost:5173",
 ];

@@ -59,4 +59,4 @@ This is a static Vite app. On [Render](https://render.com/) create a **Static Si
 
 ## Live Site
 
-🌐 https://algoarena.onrender.com
+🌐 https://algoarenaquest.onrender.com
