@@ -1,0 +1,13 @@
+project_id = "txsfokvwagvcndwauyfl"
+
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+[functions.send-contest-email]
+verify_jwt = false
+
+[functions.send-contest-reminders]
+verify_jwt = false
