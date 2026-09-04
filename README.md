@@ -51,11 +51,12 @@ Set the `RESEND_API_KEY` secret, and make sure the `ALLOWED_ORIGINS` list in eac
 
 ## Deployment
 
-This is a static Vite app. On [Render](https://render.com/) create a **Static Site** from this repository:
+Deployed on [Render](https://render.com/) as a **Web Service** from this repository:
 
 - Build command: `npm install && npm run build`
-- Publish directory: `dist`
-- Add a rewrite rule `/*` → `/index.html` so client-side routes work on refresh
+- Start command: `npm run preview -- --host 0.0.0.0 --port $PORT`
+
+`vite preview` serves the production build and falls back to `index.html` for client-side routes, so deep links work on refresh. The committed `.env` supplies the Supabase configuration at build time, and new pushes to `main` auto-deploy.
 
 ## Live Site
 
