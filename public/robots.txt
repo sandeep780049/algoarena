@@ -16,4 +16,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: https://algoarenaquest.onrender.com/sitemap.xml
+Sitemap: https://algoarena-9nwy.onrender.com/sitemap.xml

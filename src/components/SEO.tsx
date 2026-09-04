@@ -15,7 +15,7 @@ export function SEO({
   image = 'https://storage.googleapis.com/gpt-engineer-file-uploads/6KqQuPTsG5UR3rnYRHZxmwbxZsa2/social-images/social-1767403202207-im.jpg',
   type = 'website' 
 }: SEOProps) {
-  const siteUrl = 'https://algoarenaquest.onrender.com';
+  const siteUrl = 'https://algoarena-9nwy.onrender.com';
   const fullUrl = `${siteUrl}${path}`;
   const fullTitle = `JC AlgoArena – ${title}`;
 

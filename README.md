@@ -61,4 +61,4 @@ The committed `.env` supplies the Supabase configuration at build time, and new 
 
 ## Live Site
 
-🌐 https://algoarenaquest.onrender.com
+🌐 https://algoarena-9nwy.onrender.com
