@@ -21,8 +21,8 @@ Take part in timed contests, solve MCQ challenges, climb the leaderboard, and ea
 | Home | Contests |
 | :---: | :---: |
 | ![Home page of JC AlgoArena showing hero, contests and leaderboard highlights](docs/screenshots/home.png) | ![Contests page listing available contests](docs/screenshots/contests.png) |
-| **Sign in** | |
-| ![Passwordless OTP sign-in page](docs/screenshots/auth.png) | |
+| **Leaderboard** | **Sign in** |
+| ![Global leaderboard page](docs/screenshots/leaderboard.png) | ![Passwordless OTP sign-in page](docs/screenshots/auth.png) |
 
 ## 🚀 Features
 
