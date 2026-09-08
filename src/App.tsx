@@ -52,6 +52,7 @@ const App = () => (
           <Route path="/reset-password" element={<Auth />} />
           <Route path="/contests" element={<Contests />} />
           <Route path="/contest/:id" element={<ContestDetail />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/quiz/:id" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<Profile />} />
