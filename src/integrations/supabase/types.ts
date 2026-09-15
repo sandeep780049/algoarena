@@ -277,6 +277,7 @@ export type Database = {
           id: string
           options: Json
           question_text: string
+          question_type: string
           tags: string[] | null
           updated_at: string
         }
@@ -290,6 +291,7 @@ export type Database = {
           id?: string
           options?: Json
           question_text: string
+          question_type?: string
           tags?: string[] | null
           updated_at?: string
         }
@@ -303,6 +305,7 @@ export type Database = {
           id?: string
           options?: Json
           question_text?: string
+          question_type?: string
           tags?: string[] | null
           updated_at?: string
         }
@@ -474,6 +477,19 @@ export type Database = {
           total_score: number
           user_id: string
           username: string
+        }[]
+      }
+      get_contest_review: {
+        Args: { p_contest_id: string }
+        Returns: {
+          code_block: string | null
+          correct_answer: number
+          explanation: string | null
+          id: string
+          is_correct: boolean
+          options: Json
+          question_text: string
+          user_answer: number
         }[]
       }
       get_leaderboard_entries: {

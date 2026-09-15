@@ -21,6 +21,7 @@ const questionSchema = z.object({
   options: z.array(z.string().trim().min(1, "Option cannot be empty").max(500, "Option must be under 500 characters")).length(4, "Exactly 4 options required"),
   correctAnswer: z.number().min(0).max(3),
   explanation: z.string().max(2000, "Explanation must be under 2000 characters").optional(),
+  questionType: z.enum(['multiple_choice', 'output']),
 });
 
 const contestSchema = z.object({
@@ -52,6 +53,7 @@ export default function Admin() {
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState(0);
   const [explanation, setExplanation] = useState('');
+  const [questionType, setQuestionType] = useState<'multiple_choice' | 'output'>('multiple_choice');
 
   // Contest form state
   const [contestName, setContestName] = useState('');
@@ -88,7 +90,7 @@ export default function Admin() {
 
   const resetQuestionForm = () => {
     setQuestionText(''); setCodeBlock(''); setOptions(['', '', '', '']);
-    setCorrectAnswer(0); setExplanation(''); setEditingQuestion(null); setShowQuestionForm(false);
+    setCorrectAnswer(0); setExplanation(''); setQuestionType('multiple_choice'); setEditingQuestion(null); setShowQuestionForm(false);
   };
 
   const resetContestForm = () => {
@@ -98,13 +100,13 @@ export default function Admin() {
 
   const saveQuestion = async () => {
     const validation = questionSchema.safeParse({
-      questionText, codeBlock: codeBlock || undefined, options, correctAnswer, explanation: explanation || undefined,
+      questionText, codeBlock: codeBlock || undefined, options, correctAnswer, explanation: explanation || undefined, questionType,
     });
     if (!validation.success) {
       toast({ title: 'Validation Error', description: validation.error.errors[0].message, variant: 'destructive' });
       return;
     }
-    const data = { question_text: validation.data.questionText, code_block: validation.data.codeBlock || null, options: validation.data.options, correct_answer: validation.data.correctAnswer, explanation: validation.data.explanation || null, created_by: user?.id };
+    const data = { question_text: validation.data.questionText, code_block: validation.data.codeBlock || null, options: validation.data.options, correct_answer: validation.data.correctAnswer, explanation: validation.data.explanation || null, question_type: validation.data.questionType, created_by: user?.id };
     if (editingQuestion) {
       await supabase.from('questions').update(data).eq('id', editingQuestion.id);
     } else {

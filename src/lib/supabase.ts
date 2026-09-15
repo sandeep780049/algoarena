@@ -24,6 +24,7 @@ export interface Question {
   explanation: string | null;
   difficulty: string;
   tags: string[];
+  question_type: 'multiple_choice' | 'output';
   created_by: string | null;
   created_at: string;
   updated_at: string;

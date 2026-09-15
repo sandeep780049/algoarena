@@ -16,7 +16,9 @@ import {
   Flag,
   Trophy,
   CheckCircle,
-  XCircle
+  XCircle,
+  ArrowLeft,
+  ListChecks
 } from 'lucide-react';
 import { addMinutes, differenceInSeconds } from 'date-fns';
 
@@ -52,6 +54,119 @@ interface SubmitQuizResponse {
   percentage?: number;
 }
 
+interface ReviewQuestion {
+  id: string;
+  question_text: string;
+  code_block: string | null;
+  options: (string | null)[];
+  correct_answer: number;
+  user_answer: number;
+  is_correct: boolean;
+  explanation: string | null;
+}
+
+function ContestReview({ questions, onBack }: { questions: ReviewQuestion[]; onBack: () => void }) {
+  const correctCount = questions.filter(q => q.is_correct).length;
+  const incorrectCount = questions.filter(q => !q.is_correct).length;
+
+  return (
+    <div className="min-h-screen bg-background py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl font-bold">Answer Review</h1>
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Result
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-8">
+            <div className="px-4 py-2 rounded-lg bg-secondary">
+              <p className="text-sm text-muted-foreground">Score</p>
+              <p className="text-xl font-bold text-primary">{correctCount}/{questions.length}</p>
+            </div>
+            <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+              <p className="text-sm text-emerald-500">Correct</p>
+              <p className="text-xl font-bold text-emerald-500">{correctCount}</p>
+            </div>
+            <div className="px-4 py-2 rounded-lg bg-destructive/10 border border-destructive/30">
+              <p className="text-sm text-destructive">Incorrect</p>
+              <p className="text-xl font-bold text-destructive">{incorrectCount}</p>
+            </div>
+          </div>
+
+          {questions.map((q, idx) => {
+            const options = Array.isArray(q.options) ? q.options as string[] : [];
+            const answered = q.user_answer >= 0 && q.user_answer < options.length;
+
+            return (
+              <div key={q.id} className="bg-card border border-border rounded-xl p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Badge variant="secondary">Question {idx + 1}</Badge>
+                  {q.is_correct ? (
+                    <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Correct
+                    </Badge>
+                  ) : answered ? (
+                    <Badge className="bg-destructive/15 text-destructive border-destructive/30">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Incorrect
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Not Answered</Badge>
+                  )}
+                </div>
+
+                <h3 className="text-lg font-medium mb-4">{q.question_text}</h3>
+
+                {q.code_block && (
+                  <pre className="bg-secondary p-4 rounded-lg mb-4 overflow-x-auto text-sm font-mono">
+                    <code>{q.code_block}</code>
+                  </pre>
+                )}
+
+                <div className="space-y-2 mb-4">
+                  {options.map((option, oi) => {
+                    const isCorrectOption = oi === q.correct_answer;
+                    const isUserWrongChoice = oi === q.user_answer && !q.is_correct;
+                    const optionClasses = isCorrectOption
+                      ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                      : isUserWrongChoice
+                        ? 'bg-destructive/10 border-destructive text-destructive'
+                        : 'bg-secondary border-border';
+
+                    return (
+                      <div key={oi} className={`w-full text-left p-3 rounded-lg border flex items-center gap-3 ${optionClasses}`}>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
+                          isCorrectOption ? 'bg-emerald-500 text-white' : 'bg-background'
+                        }`}>
+                          {String.fromCharCode(65 + oi)}
+                        </span>
+                        <span className="flex-1">{option}</span>
+                        {isCorrectOption && <Badge variant="outline">Answer</Badge>}
+                        {isUserWrongChoice && <Badge variant="outline">Your Choice</Badge>}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {q.explanation && (
+                  <div className="p-4 rounded-lg bg-muted">
+                    <p className="text-sm font-medium mb-1">Explanation</p>
+                    <p className="text-sm text-muted-foreground">{q.explanation}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Quiz() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -69,6 +184,9 @@ export default function Quiz() {
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [showEarlySubmitDialog, setShowEarlySubmitDialog] = useState(false);
+  const [review, setReview] = useState<ReviewQuestion[] | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [loadingReview, setLoadingReview] = useState(false);
   
   
   // Prevent double submission
@@ -240,6 +358,32 @@ export default function Quiz() {
     }
   };
 
+  const fetchReview = async () => {
+    if (!user || !id || loadingReview || review) return;
+    setLoadingReview(true);
+    try {
+      const { data, error } = await supabase.rpc('get_contest_review', {
+        p_contest_id: id,
+      });
+      if (error) throw error;
+      setReview((data ?? []) as ReviewQuestion[]);
+      setShowReview(true);
+      if (!data || data.length === 0) {
+        toast({
+          title: 'No review available',
+          description: 'Your answers for this contest could not be loaded.',
+        });
+      } else {
+        toast({ title: 'Review loaded', description: 'Here are your answers with explanations.' });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load the answer review.';
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
   const saveAnswer = async (questionId: string, answerIndex: number | null) => {
     if (!user || !contest) return;
     if (answerIndex !== null && (answerIndex < 0 || answerIndex > 3)) return;
@@ -399,6 +543,9 @@ export default function Quiz() {
   }
 
   if (quizResult) {
+    if (showReview && review && review.length > 0) {
+      return <ContestReview questions={review} onBack={() => setShowReview(false)} />;
+    }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -444,6 +591,16 @@ export default function Quiz() {
             </div>
 
             <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={() => (review ? setShowReview(true) : fetchReview())}
+                disabled={loadingReview}
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                {loadingReview ? 'Loading...' : 'Review Answers & Explanations'}
+              </Button>
               <Link to={`/leaderboard?contest=${contest?.id}`} className="block">
                 <Button className="w-full" size="lg">
                   <Trophy className="h-4 w-4 mr-2" />
