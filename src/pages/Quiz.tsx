@@ -20,7 +20,7 @@ import {
   ArrowLeft,
   ListChecks
 } from 'lucide-react';
-import { addMinutes, differenceInSeconds } from 'date-fns';
+import { addMinutes, differenceInSeconds, format } from 'date-fns';
 
 interface QuizQuestion {
   id: string;
@@ -253,6 +253,14 @@ export default function Quiz() {
             timeTaken: existingResult.time_taken_seconds || 0,
           });
           setContest({ id, name: 'Quiz', start_time: '', duration_minutes: 0, status: 'ended' } as Contest);
+          const { data: completedContest } = await supabase
+            .from('contests')
+            .select('id, name, start_time, duration_minutes, status')
+            .eq('id', id)
+            .maybeSingle();
+          if (completedContest) {
+            setContest(completedContest as Contest);
+          }
           setLoading(false);
           toast({
             title: 'Already Attempted',
@@ -546,6 +554,10 @@ export default function Quiz() {
     if (showReview && review && review.length > 0) {
       return <ContestReview questions={review} onBack={() => setShowReview(false)} />;
     }
+    const reviewEndTime = contest?.start_time
+      ? addMinutes(new Date(contest.start_time), contest.duration_minutes)
+      : null;
+    const canReview = reviewEndTime ? new Date() >= reviewEndTime : false;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -591,16 +603,26 @@ export default function Quiz() {
             </div>
 
             <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={() => (review ? setShowReview(true) : fetchReview())}
-                disabled={loadingReview}
-              >
-                <ListChecks className="h-4 w-4 mr-2" />
-                {loadingReview ? 'Loading...' : 'Review Answers & Explanations'}
-              </Button>
+              {canReview ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  onClick={() => (review ? setShowReview(true) : fetchReview())}
+                  disabled={loadingReview}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  {loadingReview ? 'Loading...' : 'Review Answers & Explanations'}
+                </Button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground px-2 py-3 rounded-lg bg-secondary">
+                  <ListChecks className="h-4 w-4 shrink-0" />
+                  <span>
+                    Answers &amp; explanations unlock when this contest ends
+                    {reviewEndTime ? ` on ${format(reviewEndTime, 'PPp')}` : ''}.
+                  </span>
+                </div>
+              )}
               <Link to={`/leaderboard?contest=${contest?.id}`} className="block">
                 <Button className="w-full" size="lg">
                   <Trophy className="h-4 w-4 mr-2" />
