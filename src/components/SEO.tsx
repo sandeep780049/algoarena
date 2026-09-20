@@ -12,7 +12,7 @@ export function SEO({
   title, 
   description, 
   path, 
-  image = 'https://storage.googleapis.com/gpt-engineer-file-uploads/6KqQuPTsG5UR3rnYRHZxmwbxZsa2/social-images/social-1767403202207-im.jpg',
+  image = 'https://algoarena-9nwy.onrender.com/logo.jpg',
   type = 'website' 
 }: SEOProps) {
   const siteUrl = 'https://algoarena-9nwy.onrender.com';
