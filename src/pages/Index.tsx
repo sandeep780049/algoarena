@@ -123,16 +123,13 @@ export default function Index() {
   }, []);
 
   const fetchStats = async () => {
-    const [questionsRes, usersRes, contestsRes] = await Promise.all([
-      supabase.from('questions').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('contests').select('id', { count: 'exact', head: true }).eq('is_published', true),
-    ]);
+    // Read from the platform_stats view — the questions table itself is not publicly readable (anti-cheat)
+    const { data } = await supabase.from('platform_stats').select('*').single();
 
     setStats({
-      questions: questionsRes.count || 0,
-      users: usersRes.count || 0,
-      contests: contestsRes.count || 0,
+      questions: data?.questions_count ?? 0,
+      users: data?.profiles_count ?? 0,
+      contests: data?.contests_count ?? 0,
     });
   };
 
