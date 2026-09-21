@@ -242,12 +242,13 @@ const handler = async (req: Request): Promise<Response> => {
           );
 
           try {
-            await resend.emails.send({
-              from: "JC AlgoArena <onboarding@resend.dev>",
+            const { error: resendError } = await resend.emails.send({
+              from: "JC AlgoArena <no-reply@codequizarena.dpdns.org>",
               to: [userData.user.email],
               subject: `⏰ Reminder: ${contest.name} starts in 30 minutes!`,
               html,
             });
+            if (resendError) throw resendError;
             emailsSent++;
             console.log(`Reminder sent to ${userData.user.email} for ${contest.name}`);
           } catch (emailError) {
@@ -281,12 +282,13 @@ const handler = async (req: Request): Promise<Response> => {
           );
 
           try {
-            await resend.emails.send({
-              from: "JC AlgoArena <onboarding@resend.dev>",
+            const { error: resendError } = await resend.emails.send({
+              from: "JC AlgoArena <no-reply@codequizarena.dpdns.org>",
               to: [userData.user.email],
               subject: `🔴 ${contest.name} is LIVE NOW!`,
               html,
             });
+            if (resendError) throw resendError;
             emailsSent++;
             console.log(`Live notification sent to ${userData.user.email} for ${contest.name}`);
           } catch (emailError) {

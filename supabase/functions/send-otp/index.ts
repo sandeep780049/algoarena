@@ -123,8 +123,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send OTP email
-    const emailResponse = await resend.emails.send({
-      from: "JC AlgoArena <onboarding@resend.dev>",
+    const { error: resendError } = await resend.emails.send({
+      from: "JC AlgoArena <no-reply@codequizarena.dpdns.org>",
       to: [email],
       subject: "Verify your email - JC AlgoArena",
       html: `
@@ -169,7 +169,15 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("OTP email sent successfully:", emailResponse);
+    if (resendError) {
+      console.error("Resend API error:", resendError);
+      return new Response(
+        JSON.stringify({ error: "Failed to send OTP email. Please try again." }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("OTP email sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, message: "OTP sent successfully" }),

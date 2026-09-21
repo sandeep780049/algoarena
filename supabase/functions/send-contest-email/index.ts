@@ -356,17 +356,25 @@ const handler = async (req: Request): Promise<Response> => {
         );
     }
 
-    const emailResponse = await resend.emails.send({
-      from: "JC AlgoArena <onboarding@resend.dev>",
+    const { data: emailData, error: resendError } = await resend.emails.send({
+      from: "JC AlgoArena <no-reply@codequizarena.dpdns.org>",
       to: [email],
       subject,
       html,
     });
 
-    console.log(`Contest email (${type}) sent to ${email}:`, emailResponse);
+    if (resendError) {
+      console.error("Resend API error:", resendError);
+      return new Response(
+        JSON.stringify({ error: "Failed to send email. Please try again." }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`Contest email (${type}) sent to ${email}:`, emailData);
 
     return new Response(
-      JSON.stringify({ success: true, data: emailResponse }),
+      JSON.stringify({ success: true, data: emailData }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: unknown) {
