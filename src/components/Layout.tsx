@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { CommandPalette } from '@/components/CommandPalette';
 import { 
   Terminal, 
   Trophy, 
@@ -12,6 +13,7 @@ import {
   X,
   Home,
   Code2,
+  Search,
   
 } from 'lucide-react';
 
@@ -24,6 +26,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [visitedLinks, setVisitedLinks] = useState<Set<string>>(new Set());
 
   // Load visited links from localStorage on mount
@@ -95,6 +98,16 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               ))}
             </nav>
+
+            {/* Command palette trigger */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Search className="h-4 w-4" />
+              Search…
+              <kbd className="ml-4 rounded border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-mono">Ctrl K</kbd>
+            </button>
 
             {/* Auth Buttons */}
             <div className="hidden md:flex items-center gap-3">
@@ -221,6 +234,9 @@ export function Layout({ children }: LayoutProps) {
           </div>
         )}
       </header>
+
+      {/* Global command palette (Ctrl+K) */}
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 
       {/* Main Content */}
       <main className="flex-1">
