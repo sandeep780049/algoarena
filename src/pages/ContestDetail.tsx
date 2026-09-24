@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { AddToCalendarButton } from '@/components/contest/AddToCalendarButton';
 import { useToast } from '@/hooks/use-toast';
 import type { Contest, Question } from '@/lib/supabase';
 
@@ -535,6 +536,13 @@ export default function ContestDetail() {
                       {registering ? 'Registering...' : 'Register Now'}
                     </Button>
                   )}
+                  <div className="mt-3">
+                    <AddToCalendarButton
+                      contestName={contest.name}
+                      startTime={startTime}
+                      durationMinutes={contest.duration_minutes}
+                    />
+                  </div>
                 </>
               )}
 
