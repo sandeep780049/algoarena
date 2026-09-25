@@ -81,3 +81,59 @@ export interface UserRole {
   role: AppRole;
   created_at: string;
 }
+
+export interface DailyChallenge {
+  id: string;
+  challenge_date: string;
+  question_text: string;
+  code_block: string | null;
+  options: string[];
+  difficulty: string | null;
+  tags: string[] | null;
+  already_completed: boolean;
+  selected_answer: number | null;
+  is_correct: boolean | null;
+  correct_answer: number | null;
+  explanation: string | null;
+}
+
+export interface DailyChallengeEntry {
+  date: string;
+  is_correct: boolean;
+}
+
+export interface DailyStreak {
+  user_id: string;
+  username: string | null;
+  avatar_url: string | null;
+  current_streak: number;
+  longest_streak: number;
+  total_completed: number;
+  last_completed_date: string | null;
+  completed_today: boolean;
+  solved_today: boolean | null;
+  history: DailyChallengeEntry[];
+}
+
+export interface DailyChallengeResult {
+  success: boolean;
+  error?: string;
+  already_completed?: boolean;
+  is_correct?: boolean;
+  correct_answer?: number;
+  explanation?: string | null;
+  current_streak?: number;
+  longest_streak?: number;
+  total_completed?: number;
+}
+
+export interface StreakLeaderboardEntry {
+  rank: number;
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  current_streak: number;
+  longest_streak: number;
+  total_completed: number;
+  last_completed_date: string | null;
+}

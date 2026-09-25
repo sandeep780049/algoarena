@@ -27,6 +27,7 @@ Take part in timed contests, solve MCQ challenges, climb the leaderboard, and ea
 ## 🚀 Features
 
 - **🧠 Contests** — daily, weekly, and special timed contests with live countdowns
+- **🔥 Daily challenge** — one seeded question every day with a streak counter, a year-long activity heatmap, and a streak leaderboard
 - **🛡️ Anti-cheat** — detects tab switches and flags attempts to leave the contest window
 - **🏅 Leaderboard** — global rankings with a podium view for top performers
 - **📜 Certificates** — downloadable certificate cards for contest winners
@@ -93,6 +94,22 @@ supabase functions deploy send-contest-reminders
 ```
 
 Set the `RESEND_API_KEY` secret, and make sure the `ALLOWED_ORIGINS` list in each function includes your deployed origin.
+
+## 🗄️ Database migrations
+
+Schema lives in `supabase/migrations`. Apply pending migrations with:
+
+```sh
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+The daily challenge feature is delivered by two migrations:
+
+- `20260917000000_daily_challenges.sql` — `daily_challenges`, `daily_challenge_attempts`, `user_streaks` tables with RLS, plus 30 days of pre-scheduled questions
+- `20260917000100_daily_challenge_functions.sql` — `ensure_daily_challenge`, `get_daily_challenge`, `submit_daily_challenge`, `get_daily_challenge_streak`, `get_streak_leaderboard`
+
+Once applied, no further upkeep is needed: `ensure_daily_challenge` schedules each new day on demand. Until the migrations are applied, `/daily` shows a "not available" notice instead of the challenge.
 
 ## 📦 Deployment
 
