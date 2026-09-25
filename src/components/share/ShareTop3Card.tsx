@@ -74,8 +74,8 @@ export function ShareTop3Card({ contestName, entries }: ShareTop3CardProps) {
       } else {
         handleCopy();
       }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
+    } catch (error) {
+      if ((error as Error)?.name !== 'AbortError') {
         handleCopy();
       }
     }

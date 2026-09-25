@@ -195,40 +195,7 @@ export default function Quiz() {
   // Enable anti-cheat protections when contest is active
   useAntiCheat(!hasCompleted && !quizResult && !loading && questions.length > 0);
 
-  useEffect(() => {
-    if (!user) {
-      sessionStorage.setItem('redirectAfterAuth', `/quiz/${id}`);
-      navigate('/auth');
-      return;
-    }
-    if (id) {
-      fetchQuizData();
-    }
-  }, [id, user]);
-
-  useEffect(() => {
-    if (!contest || !startedAt || hasCompleted || quizResult) return;
-    
-    const endTime = addMinutes(new Date(contest.start_time), contest.duration_minutes);
-    
-    const updateTimer = () => {
-      const now = new Date();
-      const diff = differenceInSeconds(endTime, now);
-      
-      if (diff <= 0) {
-        handleSubmit();
-        return;
-      }
-      
-      setTimeRemaining(diff);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [contest, startedAt, hasCompleted, quizResult]);
-
-  const fetchQuizData = async () => {
+  const fetchQuizData = useCallback(async () => {
     try {
       // FIRST: Check if user has already attempted this contest
       if (user) {
@@ -364,7 +331,7 @@ export default function Quiz() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user, navigate, toast]);
 
   const fetchReview = async () => {
     if (!user || !id || loadingReview || review) return;
@@ -522,6 +489,39 @@ export default function Quiz() {
       isSubmittingRef.current = false;
     }
   }, [user, contest, startedAt, answers, quizResult, hasCompleted, toast]);
+
+  useEffect(() => {
+    if (!user) {
+      sessionStorage.setItem('redirectAfterAuth', `/quiz/${id}`);
+      navigate('/auth');
+      return;
+    }
+    if (id) {
+      fetchQuizData();
+    }
+  }, [id, user, fetchQuizData, navigate]);
+
+  useEffect(() => {
+    if (!contest || !startedAt || hasCompleted || quizResult) return;
+
+    const endTime = addMinutes(new Date(contest.start_time), contest.duration_minutes);
+
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = differenceInSeconds(endTime, now);
+
+      if (diff <= 0) {
+        handleSubmit();
+        return;
+      }
+
+      setTimeRemaining(diff);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [contest, startedAt, hasCompleted, quizResult, handleSubmit]);
 
   const handleSubmitClick = () => {
     // Always show early-confirmation dialog when time is remaining
