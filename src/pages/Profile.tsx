@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
+import { StreakCard } from '@/components/daily/StreakCard';
+import { StreakCalendar } from '@/components/daily/StreakCalendar';
 import { RankBadge, getRankBadgeInfo } from '@/components/leaderboard/RankBadge';
 import { supabase } from '@/lib/supabase';
-import type { ContestResult, Contest, Profile as ProfileType } from '@/lib/supabase';
+import type { ContestResult, Contest, DailyStreak, Profile as ProfileType } from '@/lib/supabase';
 import { 
   User, 
   Trophy, 
@@ -20,7 +22,8 @@ import {
   Target,
   Award,
   TrendingUp,
-  FileText
+  FileText,
+  Flame
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -62,6 +65,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [contestRanks, setContestRanks] = useState<Record<string, number>>({});
+  const [streak, setStreak] = useState<DailyStreak | null>(null);
 
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
@@ -99,6 +103,11 @@ export default function Profile() {
       } else {
         setAvatarUrl(currentUserProfile?.avatar_url || null);
       }
+
+      const { data: streakData } = await supabase.rpc('get_daily_challenge_streak', {
+        p_user_id: targetUserId,
+      });
+      setStreak((streakData as unknown as DailyStreak | null) ?? null);
 
       // Fetch results
       const { data: resultsData } = await supabase
@@ -326,6 +335,37 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Daily Challenge Streak */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <StreakCard
+            currentStreak={streak?.current_streak ?? 0}
+            longestStreak={streak?.longest_streak ?? 0}
+            totalCompleted={streak?.total_completed ?? 0}
+            completedToday={streak?.completed_today ?? false}
+            isActive={isOwnProfile}
+          />
+          {isOwnProfile ? (
+            <StreakCalendar history={streak?.history ?? []} />
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-6 flex flex-col justify-center">
+              <h2 className="text-lg font-semibold mb-2">Daily Challenge</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                {streak && streak.total_completed > 0
+                  ? `${displayProfile.username} has played ${streak.total_completed} daily challenge${
+                      streak.total_completed === 1 ? '' : 's'
+                    }.`
+                  : `${displayProfile.username} has not played the daily challenge yet.`}
+              </p>
+              <Link to="/daily">
+                <Button variant="outline">
+                  Play Today&apos;s Challenge
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Recent Results */}
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Contest History</h2>
@@ -394,12 +434,20 @@ export default function Profile() {
                 {isOwnProfile ? 'Join a contest to see your results here!' : 'This user hasn\'t participated in any contests yet.'}
               </p>
               {isOwnProfile && (
-                <Link to="/contests">
-                  <Button>
-                    Browse Contests
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Link to="/contests">
+                    <Button>
+                      Browse Contests
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/daily">
+                    <Button variant="outline">
+                      Play Daily Challenge
+                      <Flame className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           )}

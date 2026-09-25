@@ -14,6 +14,7 @@ import {
   Home,
   Code2,
   Search,
+  Flame,
   
 } from 'lucide-react';
 
@@ -55,6 +56,7 @@ export function Layout({ children }: LayoutProps) {
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/contests', label: 'Contests', icon: Trophy },
+    { href: '/daily', label: 'Daily', icon: Flame },
     { href: '/leaderboard', label: 'Leaderboard', icon: Code2 },
   ];
 
@@ -248,6 +250,9 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap justify-center gap-6 text-sm">
+              <Link to="/daily" className="text-muted-foreground hover:text-primary transition-colors">
+                Daily Challenge
+              </Link>
               <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">
                 About Us
               </Link>
