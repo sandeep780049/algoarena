@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { CertificateCard } from '@/components/certificate/CertificateCard';
@@ -22,13 +22,7 @@ export default function Certificate() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (code) {
-      fetchCertificate();
-    }
-  }, [code]);
-
-  const fetchCertificate = async () => {
+  const fetchCertificate = useCallback(async () => {
     try {
       const { data, error: rpcError } = await supabase.rpc('get_certificate_by_code', {
         p_code: code
@@ -48,7 +42,13 @@ export default function Certificate() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [code]);
+
+  useEffect(() => {
+    if (code) {
+      fetchCertificate();
+    }
+  }, [code, fetchCertificate]);
 
   if (loading) {
     return (

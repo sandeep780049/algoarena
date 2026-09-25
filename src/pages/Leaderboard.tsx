@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { SEO } from '@/components/SEO';
@@ -95,11 +95,6 @@ export default function Leaderboard() {
   const isGlobalLeaderboardLocked = !selectedContest && userCompletedContests === 0 && !isAdmin;
 
   useEffect(() => {
-    fetchContests();
-    fetchUserCompletedContests();
-  }, [user]);
-
-  useEffect(() => {
     if (selectedContest) {
       const contest = contests.find(c => c.id === selectedContest);
       setSelectedContestData(contest || null);
@@ -117,7 +112,7 @@ export default function Leaderboard() {
     }
   }, [selectedContest, contests]);
 
-  const fetchContests = async () => {
+  const fetchContests = useCallback(async () => {
     const { data } = await supabase
       .from('contests')
       .select('*')
@@ -125,9 +120,9 @@ export default function Leaderboard() {
       .order('start_time', { ascending: false });
     
     setContests((data as Contest[]) || []);
-  };
+  }, []);
 
-  const fetchUserCompletedContests = async () => {
+  const fetchUserCompletedContests = useCallback(async () => {
     if (!user) {
       setUserCompletedContests(0);
       return;
@@ -149,7 +144,12 @@ export default function Leaderboard() {
       console.error('Error fetching user completed contests:', error);
       setUserCompletedContests(0);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchContests();
+    fetchUserCompletedContests();
+  }, [fetchContests, fetchUserCompletedContests]);
 
   const fetchLeaderboard = async (contestId: string) => {
     setLoading(true);
@@ -187,7 +187,7 @@ export default function Leaderboard() {
         
         if (certsData) {
           const certsMap: Record<string, CertificateData> = {};
-          certsData.forEach((cert: any) => {
+          certsData.forEach((cert) => {
             certsMap[cert.user_id] = {
               certificate_code: cert.certificate_code,
               rank: cert.rank,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { SEO } from '@/components/SEO';
@@ -80,9 +80,9 @@ export default function Profile() {
     if (targetUserId) {
       fetchUserData();
     }
-  }, [targetUserId]);
+  }, [targetUserId, fetchUserData]);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     if (!targetUserId) return;
 
     try {
@@ -196,7 +196,7 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [targetUserId, isOwnProfile, navigate, currentUserProfile]);
 
   const handleAvatarUpload = (url: string) => {
     setAvatarUrl(url);
