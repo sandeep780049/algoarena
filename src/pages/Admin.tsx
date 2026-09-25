@@ -69,7 +69,7 @@ export default function Admin() {
       navigate('/');
       toast({ title: 'Access denied', description: 'Admin access required.', variant: 'destructive' });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate, toast]);
 
   useEffect(() => {
     if (isAdmin) {

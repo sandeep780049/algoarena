@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { SEO } from '@/components/SEO';
@@ -159,11 +159,7 @@ export default function Contests() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
 
-  useEffect(() => {
-    fetchContests();
-  }, [user]);
-
-  const fetchContests = async () => {
+  const fetchContests = useCallback(async () => {
     try {
       const { data: contestsData, error } = await supabase
         .from('contests')
@@ -218,7 +214,11 @@ export default function Contests() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchContests();
+  }, [fetchContests]);
 
   const upcomingContests = contests.filter(c => getContestStatus(c) === 'upcoming');
   const liveContests = contests.filter(c => getContestStatus(c) === 'live');

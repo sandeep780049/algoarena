@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -63,12 +63,6 @@ export default function ContestDetail() {
   const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      fetchContestDetails();
-    }
-  }, [id, user]);
-
-  useEffect(() => {
     if (!contest) return;
     
     const updateTimer = () => {
@@ -103,7 +97,7 @@ export default function ContestDetail() {
     return () => clearInterval(interval);
   }, [contest]);
 
-  const fetchContestDetails = async () => {
+  const fetchContestDetails = useCallback(async () => {
     try {
       const { data: contestData, error: contestError } = await supabase
         .from('contests')
@@ -174,7 +168,13 @@ export default function ContestDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user, navigate, toast]);
+
+  useEffect(() => {
+    if (id) {
+      fetchContestDetails();
+    }
+  }, [id, fetchContestDetails]);
 
   const handleRegister = async () => {
     if (!user) {
@@ -199,7 +199,7 @@ export default function ContestDetail() {
 
     setRegistering(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('contest_registrations')
         .insert({
           user_id: user.id,
