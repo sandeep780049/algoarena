@@ -240,6 +240,86 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenge_attempts: {
+        Row: {
+          challenge_date: string
+          challenge_id: string
+          completed_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: number
+          time_taken_seconds: number
+          user_id: string
+        }
+        Insert: {
+          challenge_date: string
+          challenge_id: string
+          completed_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: number
+          time_taken_seconds?: number
+          user_id: string
+        }
+        Update: {
+          challenge_date?: string
+          challenge_id?: string
+          completed_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          selected_answer?: number
+          time_taken_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenge_attempts_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_challenge_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          challenge_date: string
+          created_at: string
+          id: string
+          question_id: string
+        }
+        Insert: {
+          challenge_date: string
+          created_at?: string
+          id?: string
+          question_id: string
+        }
+        Update: {
+          challenge_date?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenges_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_otps: {
         Row: {
           created_at: string
@@ -455,6 +535,33 @@ export type Database = {
           },
         ]
       }
+      user_streaks: {
+        Row: {
+          current_streak: number
+          last_completed_date: string | null
+          longest_streak: number
+          total_completed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_completed_date?: string | null
+          longest_streak?: number
+          total_completed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_completed_date?: string | null
+          longest_streak?: number
+          total_completed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       platform_stats: {
@@ -479,6 +586,7 @@ export type Database = {
       cleanup_expired_otps: { Args: never; Returns: undefined }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       clear_rate_limit: { Args: { p_key: string }; Returns: undefined }
+      ensure_daily_challenge: { Args: { p_date?: string | null }; Returns: string | null }
       generate_certificate: {
         Args: { p_contest_id: string; p_user_id: string }
         Returns: Json
@@ -536,6 +644,40 @@ export type Database = {
           username: string
         }[]
       }
+      get_daily_challenge: {
+        Args: { p_date?: string | null }
+        Returns: {
+          already_completed: boolean
+          challenge_date: string
+          code_block: string | null
+          correct_answer: number | null
+          difficulty: string | null
+          explanation: string | null
+          id: string
+          is_correct: boolean | null
+          options: Json
+          question_text: string
+          selected_answer: number | null
+          tags: string[] | null
+        }[]
+      }
+      get_daily_challenge_streak: {
+        Args: { p_user_id?: string | null }
+        Returns: Json
+      }
+      get_streak_leaderboard: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string | null
+          current_streak: number
+          last_completed_date: string | null
+          longest_streak: number
+          rank: number
+          total_completed: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_my_contest_result: { Args: { p_contest_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -551,6 +693,14 @@ export type Database = {
           p_contest_id: string
           p_question_id: string
           p_selected_answer: number
+        }
+        Returns: Json
+      }
+      submit_daily_challenge: {
+        Args: {
+          p_challenge_id: string
+          p_selected_answer: number
+          p_time_taken_seconds?: number
         }
         Returns: Json
       }

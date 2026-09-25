@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
+import DailyChallenge from "./pages/DailyChallenge";
 import Quiz from "./pages/Quiz";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
@@ -52,6 +53,7 @@ const App = () => (
           <Route path="/reset-password" element={<Auth />} />
           <Route path="/contests" element={<Contests />} />
           <Route path="/contest/:id" element={<ContestDetail />} />
+          <Route path="/daily" element={<DailyChallenge />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/quiz/:id" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

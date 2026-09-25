@@ -21,6 +21,7 @@ import {
   BarChart3,
   Target,
   Braces,
+  Flame,
 } from 'lucide-react';
 import { addMinutes, formatDistanceToNow } from 'date-fns';
 
@@ -291,6 +292,36 @@ export default function Index() {
           </div>
         </section>
       )}
+
+      {/* Daily Challenge */}
+      <section className="py-14">
+        <div className="container mx-auto px-4">
+          <Link
+            to="/daily"
+            className="block bg-card border border-border rounded-2xl p-8 md:p-10 hover:border-glow-warning/50 transition-all hover:scale-[1.01] relative overflow-hidden group"
+          >
+            <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 bg-glow-warning/10 rounded-full blur-3xl animate-float" />
+            <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-glow-warning/20 flex items-center justify-center shrink-0 glow-warning">
+                <Flame className="h-8 w-8 text-glow-warning group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">Daily Challenge</h2>
+                <p className="text-muted-foreground">
+                  One coding question every day. Answer it to keep your streak alive and climb the
+                  streak leaderboard.
+                </p>
+              </div>
+              <Button asChild className="bg-glow-warning text-background hover:bg-glow-warning/90 shrink-0">
+                <Link to="/daily">
+                  Play Today&apos;s
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </Link>
+        </div>
+      </section>
 
       {/* Code Output Contests Section */}
       <section className="py-16 relative overflow-hidden">
