@@ -296,7 +296,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_user_id uuid := COALESCE(p_user_id, auth.uid());
-  v_today date := (now() AT TIME ZONE 'utc')::date);
+  v_today date := (now() AT TIME ZONE 'utc')::date;
   v_username text;
   v_avatar text;
   v_current integer := 0;
