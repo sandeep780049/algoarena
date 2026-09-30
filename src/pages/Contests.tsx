@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,17 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Contest } from '@/lib/supabase';
 import { CountdownTimer } from '@/components/contest/CountdownTimer';
-import { 
-  Trophy, 
-  Clock, 
-  Calendar, 
+import { Input } from '@/components/ui/input';
+import {
+  Trophy,
+  Clock,
+  Calendar,
   Users,
   ChevronRight,
   Play,
   CheckCircle,
+  Search,
+  X,
   Sparkles
 } from 'lucide-react';
 import { format, addMinutes } from 'date-fns';
@@ -155,9 +158,71 @@ function ContestCard({ contest, showRegistration = true }: { contest: ContestWit
 
 export default function Contests() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contests, setContests] = useState<ContestWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'daily' | 'weekly' | 'special'>(
+    () => {
+      const f = searchParams.get('type');
+      return f === 'daily' || f === 'weekly' || f === 'special' ? f : 'all';
+    }
+  );
+  const [activeTab, setActiveTab] = useState(() => {
+    const f = searchParams.get('filter');
+    return f === 'live' || f === 'upcoming' || f === 'past' || f === 'my' ? f : 'upcoming';
+  });
+
+  // Keep the active tab in sync with ?filter= deep links (e.g. from the home page)
+  useEffect(() => {
+    const f = searchParams.get('filter');
+    if (f === 'live' || f === 'upcoming' || f === 'past' || f === 'my') {
+      setActiveTab(f);
+    }
+  }, [searchParams]);
+
+  const updateTypeFilter = (value: 'all' | 'daily' | 'weekly' | 'special') => {
+    setTypeFilter(value);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value === 'all') next.delete('type');
+      else next.set('type', value);
+      return next;
+    }, { replace: true });
+  };
+
+  const matchesFilters = useCallback((contest: ContestWithMeta) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const haystack = `${contest.name} ${contest.description || ''} ${contest.contest_code || ''}`.toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    if (typeFilter !== 'all' && contest.contest_type !== typeFilter) return false;
+    return true;
+  }, [searchQuery, typeFilter]);
+
+  const upcomingContests = useMemo(
+    () => contests.filter(c => getContestStatus(c) === 'upcoming' && matchesFilters(c)),
+    [contests, matchesFilters]
+  );
+  const liveContests = useMemo(
+    () => contests.filter(c => getContestStatus(c) === 'live' && matchesFilters(c)),
+    [contests, matchesFilters]
+  );
+  const pastContests = useMemo(
+    () => contests.filter(c => getContestStatus(c) === 'ended' && matchesFilters(c)),
+    [contests, matchesFilters]
+  );
+  const myContests = useMemo(
+    () => contests.filter(c => (c.isRegistered || c.hasCompleted) && matchesFilters(c)),
+    [contests, matchesFilters]
+  );
+
+  const hasActiveFilters = searchQuery.trim() !== '' || typeFilter !== 'all';
+  const clearFilters = () => {
+    setSearchQuery('');
+    updateTypeFilter('all');
+  };
 
   const fetchContests = useCallback(async () => {
     try {
@@ -220,11 +285,6 @@ export default function Contests() {
     fetchContests();
   }, [fetchContests]);
 
-  const upcomingContests = contests.filter(c => getContestStatus(c) === 'upcoming');
-  const liveContests = contests.filter(c => getContestStatus(c) === 'live');
-  const pastContests = contests.filter(c => getContestStatus(c) === 'ended');
-  const myContests = contests.filter(c => c.isRegistered || c.hasCompleted);
-
   const renderContestGrid = (contestList: ContestWithMeta[], emptyMessage: string) => {
     if (loading) {
       return (
@@ -242,6 +302,16 @@ export default function Contests() {
           <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">No contests found</h3>
           <p className="text-muted-foreground">{emptyMessage}</p>
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={clearFilters}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear search &amp; filters
+            </Button>
+          )}
         </div>
       );
     }
@@ -272,6 +342,52 @@ export default function Contests() {
           <p className="text-muted-foreground max-w-2xl">
             Join live competitions, test your coding knowledge, and climb the leaderboard.
           </p>
+        </div>
+
+        {/* Search & Type Filters */}
+        <div className="mb-8 space-y-3">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search contests by name or code…"
+              className="pl-9 pr-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['all', 'daily', 'weekly', 'special'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => updateTypeFilter(t)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize border transition-colors ${
+                  typeFilter === t
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-secondary text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                {t === 'all' ? 'All Types' : t}
+              </button>
+            ))}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-1.5 rounded-full text-sm font-medium border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <X className="h-3.5 w-3.5 inline-block mr-1" />
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Live Contests Banner */}

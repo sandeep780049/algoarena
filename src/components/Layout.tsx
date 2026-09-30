@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { CommandPalette } from '@/components/CommandPalette';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   Terminal, 
   Trophy, 
@@ -14,8 +15,7 @@ import {
   Home,
   Code2,
   Search,
-  Flame,
-  
+  Flame
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -111,6 +111,11 @@ export function Layout({ children }: LayoutProps) {
               <kbd className="ml-4 rounded border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-mono">Ctrl K</kbd>
             </button>
 
+            {/* Theme toggle (desktop) */}
+            <div className="hidden md:flex items-center">
+              <ThemeToggle />
+            </div>
+
             {/* Auth Buttons */}
             <div className="hidden md:flex items-center gap-3">
               {user ? (
@@ -163,6 +168,11 @@ export function Layout({ children }: LayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-background animate-slide-up">
             <div className="container mx-auto px-4 py-4 space-y-2">
+              {/* Theme toggle (mobile) */}
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className="text-sm font-medium text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
               {navItems.map((item) => (
                 <Link
                   key={item.href}
