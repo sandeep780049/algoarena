@@ -66,8 +66,15 @@ interface ReviewQuestion {
 }
 
 function ContestReview({ questions, onBack }: { questions: ReviewQuestion[]; onBack: () => void }) {
+  const [filter, setFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
   const correctCount = questions.filter(q => q.is_correct).length;
   const incorrectCount = questions.filter(q => !q.is_correct).length;
+
+  const filteredQuestions = questions
+    .map((q, idx) => ({ q, idx }))
+    .filter(({ q }) =>
+      filter === 'all' ? true : filter === 'correct' ? q.is_correct : !q.is_correct
+    );
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -81,22 +88,51 @@ function ContestReview({ questions, onBack }: { questions: ReviewQuestion[]; onB
             </Button>
           </div>
 
+          {/* Stats double as filter buttons */}
           <div className="flex flex-wrap gap-3 mb-8">
-            <div className="px-4 py-2 rounded-lg bg-secondary">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-all text-left ${
+                filter === 'all' ? 'bg-secondary ring-2 ring-primary/40' : 'bg-secondary hover:ring-2 hover:ring-primary/20'
+              }`}
+            >
               <p className="text-sm text-muted-foreground">Score</p>
               <p className="text-xl font-bold text-primary">{correctCount}/{questions.length}</p>
-            </div>
-            <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+            </button>
+            <button
+              onClick={() => setFilter('correct')}
+              className={`px-4 py-2 rounded-lg transition-all text-left bg-emerald-500/10 border border-emerald-500/30 ${
+                filter === 'correct' ? 'ring-2 ring-emerald-500/60' : 'hover:ring-2 hover:ring-emerald-500/30'
+              }`}
+            >
               <p className="text-sm text-emerald-500">Correct</p>
               <p className="text-xl font-bold text-emerald-500">{correctCount}</p>
-            </div>
-            <div className="px-4 py-2 rounded-lg bg-destructive/10 border border-destructive/30">
-              <p className="text-sm text-destructive">Incorrect</p>
+            </button>
+            <button
+              onClick={() => setFilter('incorrect')}
+              className={`px-4 py-2 rounded-lg transition-all text-left bg-destructive/10 border border-destructive/30 ${
+                filter === 'incorrect' ? 'ring-2 ring-destructive/60' : 'hover:ring-2 hover:ring-destructive/30'
+              }`}
+            >
+              <p className="text-sm text-destructive">Incorrect / Skipped</p>
               <p className="text-xl font-bold text-destructive">{incorrectCount}</p>
-            </div>
+            </button>
           </div>
 
-          {questions.map((q, idx) => {
+          {filteredQuestions.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-500" />
+              <p>
+                {filter === 'correct'
+                  ? 'No correct answers yet.'
+                  : filter === 'incorrect'
+                    ? 'Nothing incorrect — flawless run! 🎉'
+                    : 'No questions.'}
+              </p>
+            </div>
+          )}
+
+          {filteredQuestions.map(({ q, idx }) => {
             const options = Array.isArray(q.options) ? q.options as string[] : [];
             const answered = q.user_answer >= 0 && q.user_answer < options.length;
 
@@ -359,7 +395,7 @@ export default function Quiz() {
     }
   };
 
-  const saveAnswer = async (questionId: string, answerIndex: number | null) => {
+  const saveAnswer = useCallback(async (questionId: string, answerIndex: number | null) => {
     if (!user || !contest) return;
     if (answerIndex !== null && (answerIndex < 0 || answerIndex > 3)) return;
 
@@ -372,9 +408,9 @@ export default function Quiz() {
     } catch (error) {
       console.error('Error saving answer:', error);
     }
-  };
+  }, [user, contest]);
 
-  const selectAnswer = (answerIndex: number) => {
+  const selectAnswer = useCallback((answerIndex: number) => {
     const question = questions[currentIndex];
     if (!question || hasCompleted || quizResult) return;
 
@@ -395,7 +431,7 @@ export default function Quiz() {
       }));
       saveAnswer(question.id, answerIndex);
     }
-  };
+  }, [questions, currentIndex, hasCompleted, quizResult, answers, saveAnswer]);
 
   const handleSubmit = useCallback(async () => {
     if (!user || !contest || isSubmittingRef.current || quizResult || hasCompleted) return;
@@ -532,6 +568,52 @@ export default function Quiz() {
       handleSubmit();
     }
   };
+
+  // Keyboard shortcuts: A-D / 1-4 to answer, arrow keys to navigate, S to submit
+  useEffect(() => {
+    if (hasCompleted || quizResult || loading || questions.length === 0) return;
+
+    const handleKey = (e: KeyboardEvent) => {
+      // Ignore when typing in an input or with modifiers held
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key >= 'a' && key <= 'd') {
+        const optionIndex = key.charCodeAt(0) - 97; // 'a' -> 0
+        if (optionIndex < questions[currentIndex]?.options?.length) {
+          e.preventDefault();
+          selectAnswer(optionIndex);
+        }
+        return;
+      }
+
+      if (key >= '1' && key <= '4') {
+        const optionIndex = Number(key) - 1;
+        if (optionIndex < questions[currentIndex]?.options?.length) {
+          e.preventDefault();
+          selectAnswer(optionIndex);
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || key === 'n') {
+        e.preventDefault();
+        setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1));
+        return;
+      }
+      if (e.key === 'ArrowLeft' || key === 'p') {
+        e.preventDefault();
+        setCurrentIndex(prev => Math.max(0, prev - 1));
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [hasCompleted, quizResult, loading, questions, currentIndex, selectAnswer]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -687,6 +769,16 @@ export default function Quiz() {
               </Badge>
             </div>
 
+            {/* Answered progress bar */}
+            <div className="hidden sm:flex flex-1 max-w-[240px] mx-4 items-center gap-2">
+              <div className="h-2 flex-1 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-glow-success transition-all duration-300"
+                  style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
               isUrgent ? 'bg-destructive/20 text-destructive' : 'bg-secondary'
             }`}>
@@ -702,15 +794,15 @@ export default function Quiz() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Question Navigation */}
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex flex-wrap gap-2 mb-4">
             {questions.map((q, idx) => (
               <Button
                 key={q.id}
                 variant={currentIndex === idx ? 'default' : 'outline'}
                 size="sm"
                 className={`w-10 h-10 p-0 ${
-                  answers[q.id] !== undefined 
-                    ? 'bg-primary/20 border-primary' 
+                  answers[q.id] !== undefined
+                    ? 'bg-primary/20 border-primary'
                     : ''
                 }`}
                 onClick={() => setCurrentIndex(idx)}
@@ -719,6 +811,17 @@ export default function Quiz() {
               </Button>
             ))}
           </div>
+
+          {/* Keyboard shortcuts hint */}
+          <p className="hidden md:flex items-center justify-center gap-2 text-xs text-muted-foreground mb-6">
+            <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono">A</kbd>
+            <span>–</span>
+            <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono">D</kbd>
+            <span>to answer ·</span>
+            <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono">←</kbd>
+            <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono">→</kbd>
+            <span>to navigate</span>
+          </p>
 
           {/* Question Card */}
           <div className="bg-card border border-border rounded-xl p-6 mb-6">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import {
   CommandDialog,
   CommandEmpty,
@@ -21,6 +22,8 @@ import {
   Mail,
   LogIn,
   LogOut,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -32,6 +35,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { user, isAdmin, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
 
   const run = (action: () => void) => {
     onOpenChange(false);
@@ -110,6 +114,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           </CommandItem>
           <CommandItem onSelect={go('/contact')}>
             <Mail className="mr-2 h-4 w-4" /> Contact
+          </CommandItem>
+          <CommandItem onSelect={() => run(() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark'))}>
+            {resolvedTheme === 'dark' ? (
+              <Sun className="mr-2 h-4 w-4" />
+            ) : (
+              <Moon className="mr-2 h-4 w-4" />
+            )}
+            Switch to {resolvedTheme === 'dark' ? 'light' : 'dark'} theme
           </CommandItem>
         </CommandGroup>
       </CommandList>

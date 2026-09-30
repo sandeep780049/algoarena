@@ -25,7 +25,7 @@ import {
   FileText,
   Flame
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 
 interface UserStats {
   totalContests: number;
@@ -37,6 +37,47 @@ interface UserStats {
   correctAnswers: number;
   topFinishes: number; // Number of top 10 finishes
   winnerFinishes: number; // Number of top 3 finishes
+  currentStreak: number; // Consecutive days with a completed contest (ending today/yesterday)
+  longestStreak: number; // Longest run of consecutive contest days
+}
+
+/** Compute current & longest streaks from completed contest timestamps (local calendar days). */
+function computeStreaks(completedDates: Date[]): { currentStreak: number; longestStreak: number } {
+  if (completedDates.length === 0) return { currentStreak: 0, longestStreak: 0 };
+
+  // Unique sorted day numbers (days since epoch, local time), ascending
+  const days = Array.from(
+    new Set(completedDates.map(d => {
+      const local = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return Math.floor(local.getTime() / 86400000);
+    }))
+  ).sort((a, b) => a - b);
+
+  // Longest streak: scan consecutive runs
+  let longestStreak = 1;
+  let run = 1;
+  for (let i = 1; i < days.length; i++) {
+    if (days[i] === days[i - 1] + 1) {
+      run++;
+      longestStreak = Math.max(longestStreak, run);
+    } else {
+      run = 1;
+    }
+  }
+
+  // Current streak: count backwards from today (or yesterday, so a streak isn't "broken" before the day ends)
+  const todayDay = Math.floor(new Date().setHours(0, 0, 0, 0) / 86400000);
+  const lastDay = days[days.length - 1];
+  let currentStreak = 0;
+  if (lastDay === todayDay || lastDay === todayDay - 1) {
+    currentStreak = 1;
+    for (let i = days.length - 1; i > 0; i--) {
+      if (days[i] === days[i - 1] + 1) currentStreak++;
+      else break;
+    }
+  }
+
+  return { currentStreak, longestStreak };
 }
 
 interface ContestRank {
@@ -61,6 +102,8 @@ export default function Profile() {
     correctAnswers: 0,
     topFinishes: 0,
     winnerFinishes: 0,
+    currentStreak: 0,
+    longestStreak: 0,
   });
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -75,12 +118,6 @@ export default function Profile() {
       navigate('/auth');
     }
   }, [user, authLoading, navigate, userId]);
-
-  useEffect(() => {
-    if (targetUserId) {
-      fetchUserData();
-    }
-  }, [targetUserId, fetchUserData]);
 
   const fetchUserData = useCallback(async () => {
     if (!targetUserId) return;
@@ -179,6 +216,12 @@ export default function Profile() {
         }));
         setResults(resultsWithRanks);
 
+        // Streaks from completed contest timestamps
+        const completedDates = resultsData
+          .filter(r => r.completed_at)
+          .map(r => new Date(r.completed_at as string));
+        const { currentStreak, longestStreak } = computeStreaks(completedDates);
+
         setStats({
           totalContests: resultsData.length,
           totalScore,
@@ -189,6 +232,8 @@ export default function Profile() {
           correctAnswers: totalScore,
           topFinishes,
           winnerFinishes,
+          currentStreak,
+          longestStreak,
         });
       }
     } catch (error) {
@@ -197,6 +242,12 @@ export default function Profile() {
       setLoading(false);
     }
   }, [targetUserId, isOwnProfile, navigate, currentUserProfile]);
+
+  useEffect(() => {
+    if (targetUserId) {
+      fetchUserData();
+    }
+  }, [targetUserId, fetchUserData]);
 
   const handleAvatarUpload = (url: string) => {
     setAvatarUrl(url);
@@ -302,7 +353,7 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-card border border-border rounded-xl p-4 text-center">
             <Trophy className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats.totalContests}</p>
@@ -332,6 +383,16 @@ export default function Profile() {
             <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
             <p className="text-2xl font-bold">{stats.totalQuestions}</p>
             <p className="text-xs text-muted-foreground">Questions</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <Flame className={`h-6 w-6 mx-auto mb-2 ${stats.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <p className="text-2xl font-bold">{stats.currentStreak}</p>
+            <p className="text-xs text-muted-foreground">Day Streak</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <Flame className="h-6 w-6 text-glow-warning mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.longestStreak}</p>
+            <p className="text-xs text-muted-foreground">Best Streak</p>
           </div>
         </div>
 
