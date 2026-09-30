@@ -6,6 +6,62 @@
 
 @layer base {
   :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 10%;
+
+    --primary: 168 84% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 32% 93%;
+    --secondary-foreground: 222 47% 15%;
+
+    --muted: 214 32% 93%;
+    --muted-foreground: 215 16% 40%;
+
+    --accent: 262 83% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 30% 87%;
+    --input: 214 30% 87%;
+    --ring: 168 84% 28%;
+
+    --radius: 0.75rem;
+
+    /* Custom design tokens */
+    --glow-primary: 168 84% 40%;
+    --glow-accent: 262 83% 55%;
+    --glow-warning: 38 92% 45%;
+    --glow-success: 142 76% 30%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(168 84% 45% / 0.10), hsl(262 83% 58% / 0.10));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(168 84% 38%), hsl(168 84% 30%));
+    --code-block: 210 40% 96%;
+
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 10%;
+    --sidebar-primary: 168 84% 28%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 32% 93%;
+    --sidebar-accent-foreground: 222 47% 10%;
+    --sidebar-border: 214 30% 87%;
+    --sidebar-ring: 168 84% 28%;
+
+    /* Font families */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 96%;
 
@@ -34,17 +90,15 @@
     --input: 222 47% 14%;
     --ring: 168 84% 45%;
 
-    --radius: 0.75rem;
-
-    /* Custom design tokens */
     --glow-primary: 168 84% 45%;
     --glow-accent: 262 83% 58%;
     --glow-warning: 38 92% 50%;
     --glow-success: 142 76% 36%;
-    
+
     --gradient-hero: linear-gradient(135deg, hsl(168 84% 45% / 0.15), hsl(262 83% 58% / 0.15));
     --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 6%));
     --gradient-accent: linear-gradient(135deg, hsl(168 84% 45%), hsl(168 84% 35%));
+    --code-block: 222 47% 10%;
 
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 96%;
@@ -54,15 +108,6 @@
     --sidebar-accent-foreground: 210 40% 96%;
     --sidebar-border: 222 47% 16%;
     --sidebar-ring: 168 84% 45%;
-
-    /* Font families */
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-  }
-
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
   }
 }
 
@@ -157,7 +202,7 @@
 /* Code block styling */
 .code-block {
   @apply bg-secondary/50 rounded-lg p-4 font-mono text-sm overflow-x-auto;
-  background: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
+  background: hsl(var(--code-block));
   border: 1px solid hsl(var(--border));
 }
 
