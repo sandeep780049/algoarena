@@ -1,7 +1,15 @@
-import { useMemo } from 'react';
-import { addDays, format, startOfWeek, subWeeks } from 'date-fns';
+﻿import { useMemo } from 'react';
+import { addDays, format, parseISO, startOfWeek, subWeeks } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { DailyChallengeEntry } from '@/lib/supabase';
+
+const utc = { in: (date: Date) => new Date(date.getTime() + date.getTimezoneOffset() * 60000) } as const;
+
+/** Formats a date in UTC so keys match the yyyy-MM-dd dates stored in Postgres. */
+const formatUTC = (date: Date, pattern: string) =>
+  format(date, pattern, { in: utc } as Parameters<typeof format>[2]);
+
+const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 interface StreakCalendarProps {
   history: DailyChallengeEntry[];
@@ -29,9 +37,16 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
     const byDate = new Map<string, boolean>();
     history.forEach((entry) => byDate.set(entry.date, entry.is_correct));
 
-    const today = new Date();
-    const currentKey = todayKey ?? format(today, 'yyyy-MM-dd');
-    const start = startOfWeek(subWeeks(today, weeks - 1));
+    // The challenge is keyed on UTC dates, so "today" must be the UTC date too.
+    // Falling back to the browser's local date shifts every cell by a day for
+    // users who are not on UTC.
+    const currentKey = todayKey ?? formatUTC(new Date(), 'yyyy-MM-dd');
+    const today = parseISO(`${currentKey}T00:00:00Z`);
+    // Anchor on the Sunday that begins the *current* week and walk backwards,
+    // so the final column is this week and nothing is projected into the
+    // future. subWeeks(today, weeks - 1) counted backwards from mid-week and
+    // pushed the whole grid past today.
+    const start = subWeeks(startOfWeek(today, { weekStartsOn: 0 }), weeks - 1);
 
     const nextColumns: { key: string; state: CellState; date: Date; played: boolean }[][] = [];
     const labels: (string | null)[] = [];
@@ -41,7 +56,9 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
 
       for (let d = 0; d < 7; d++) {
         const date = addDays(start, w * 7 + d);
-        const key = format(date, 'yyyy-MM-dd');
+        // Format in UTC so the cell key matches the yyyy-MM-dd keys that the
+        // database stores for challenge_date.
+        const key = formatUTC(date, 'yyyy-MM-dd');
         const played = byDate.has(key);
 
         let state: CellState = 'empty';
@@ -57,7 +74,7 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
       nextColumns.push(cells);
 
       const previous = labels[labels.length - 1];
-      const month = format(cells[0].date, 'MMM');
+      const month = formatUTC(cells[0].date, 'MMM');
       labels.push(previous === month ? null : month);
     }
 
@@ -74,15 +91,15 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
       <div className="overflow-x-auto no-scrollbar">
         <div className="inline-flex gap-1 mb-1 pl-7">
           {monthLabels.map((label, index) => (
-            <span key={index} className="w-3 text-[10px] text-muted-foreground">
-              {label ? label.charAt(0) : ''}
+            <span key={index} className="w-3 text-[10px] text-muted-foreground whitespace-nowrap">
+              {label ?? ''}
             </span>
           ))}
         </div>
 
         <div className="flex gap-1">
           <div className="flex flex-col gap-1 pr-1">
-            {['S', '', 'M', '', 'W', '', 'F'].map((day, index) => (
+            {WEEKDAY_INITIALS.map((day, index) => (
               <span key={index} className="h-3 w-5 text-[10px] leading-3 text-muted-foreground">
                 {day}
               </span>
@@ -103,14 +120,14 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
                         />
                       </TooltipTrigger>
                       <TooltipContent>
-                        {format(cell.date, 'MMM d, yyyy')}
+                        {formatUTC(cell.date, 'MMM d, yyyy')}
                         {cell.state === 'future'
-                          ? ' — upcoming'
+                          ? ' â€” upcoming'
                           : cell.played
                           ? cell.state === 'correct'
-                            ? ' — solved'
-                            : ' — attempted'
-                          : ' — missed'}
+                            ? ' â€” solved'
+                            : ' â€” attempted'
+                          : ' â€” missed'}
                       </TooltipContent>
                     </Tooltip>
                   ))}
