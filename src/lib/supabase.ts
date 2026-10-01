@@ -106,6 +106,7 @@ export interface DailyStreak {
   user_id: string;
   username: string | null;
   avatar_url: string | null;
+  today: string;
   current_streak: number;
   longest_streak: number;
   total_completed: number;

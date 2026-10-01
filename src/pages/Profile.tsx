@@ -406,7 +406,7 @@ export default function Profile() {
             isActive={isOwnProfile}
           />
           {isOwnProfile ? (
-            <StreakCalendar history={streak?.history ?? []} />
+            <StreakCalendar history={streak?.history ?? []} todayKey={streak?.today} />
           ) : (
             <div className="bg-card border border-border rounded-xl p-6 flex flex-col justify-center">
               <h2 className="text-lg font-semibold mb-2">Daily Challenge</h2>

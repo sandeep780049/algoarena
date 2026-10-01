@@ -350,6 +350,7 @@ BEGIN
     'user_id', v_user_id,
     'username', v_username,
     'avatar_url', v_avatar,
+    'today', v_today::text,
     'current_streak', v_current,
     'longest_streak', v_longest,
     'total_completed', v_total,
