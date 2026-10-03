@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+import { useMemo } from 'react';
 import { addDays, format, parseISO, startOfWeek, subWeeks } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { DailyChallengeEntry } from '@/lib/supabase';
@@ -122,12 +122,12 @@ export function StreakCalendar({ history, weeks = 18, todayKey }: StreakCalendar
                       <TooltipContent>
                         {formatUTC(cell.date, 'MMM d, yyyy')}
                         {cell.state === 'future'
-                          ? ' â€” upcoming'
+                          ? ' — upcoming'
                           : cell.played
                           ? cell.state === 'correct'
-                            ? ' â€” solved'
-                            : ' â€” attempted'
-                          : ' â€” missed'}
+                            ? ' — solved'
+                            : ' — attempted'
+                          : ' — missed'}
                       </TooltipContent>
                     </Tooltip>
                   ))}

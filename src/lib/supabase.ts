@@ -138,3 +138,41 @@ export interface StreakLeaderboardEntry {
   total_completed: number;
   last_completed_date: string | null;
 }
+
+export interface PracticeQuestion {
+  id: string;
+  question_text: string;
+  code_block: string | null;
+  options: string[];
+  difficulty: string | null;
+  tags: string[] | null;
+}
+
+export interface PracticeFilterOption {
+  value: string;
+  count: number;
+}
+
+export interface PracticeFilters {
+  total: number;
+  difficulties: PracticeFilterOption[];
+  tags: PracticeFilterOption[];
+}
+
+export interface PracticeAnswerResult {
+  success?: boolean;
+  error?: string;
+  is_correct?: boolean;
+  correct_answer?: number;
+  explanation?: string | null;
+  first_attempt?: boolean;
+}
+
+export interface PracticeStats {
+  total_attempted: number;
+  total_correct: number;
+  answered_today: number;
+  accuracy: number;
+  by_difficulty: Record<string, number>;
+  tags: string[];
+}

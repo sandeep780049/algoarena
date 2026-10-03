@@ -15,6 +15,7 @@ import {
   Trophy,
   Code2,
   Flame,
+  Target,
   User,
   Settings,
   Calendar,
@@ -75,6 +76,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           </CommandItem>
           <CommandItem onSelect={go('/daily')}>
             <Flame className="mr-2 h-4 w-4" /> Daily Challenge
+          </CommandItem>
+          <CommandItem onSelect={go('/practice')}>
+            <Target className="mr-2 h-4 w-4" /> Practice Mode
           </CommandItem>
           <CommandItem onSelect={go('/leaderboard')}>
             <Code2 className="mr-2 h-4 w-4" /> Leaderboard
