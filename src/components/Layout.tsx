@@ -15,7 +15,8 @@ import {
   Home,
   Code2,
   Search,
-  Flame
+  Flame,
+  Target
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -57,6 +58,7 @@ export function Layout({ children }: LayoutProps) {
     { href: '/', label: 'Home', icon: Home },
     { href: '/contests', label: 'Contests', icon: Trophy },
     { href: '/daily', label: 'Daily', icon: Flame },
+    { href: '/practice', label: 'Practice', icon: Target },
     { href: '/leaderboard', label: 'Leaderboard', icon: Code2 },
   ];
 
@@ -262,6 +264,9 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex flex-wrap justify-center gap-6 text-sm">
               <Link to="/daily" className="text-muted-foreground hover:text-primary transition-colors">
                 Daily Challenge
+              </Link>
+              <Link to="/practice" className="text-muted-foreground hover:text-primary transition-colors">
+                Practice Mode
               </Link>
               <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">
                 About Us
