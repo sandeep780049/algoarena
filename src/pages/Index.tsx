@@ -187,10 +187,10 @@ export default function Index() {
   };
 
   const features = [
-    { icon: Code2, title: 'Output Prediction', description: 'Sharpen your skills by predicting outputs of carefully crafted code snippets.' },
-    { icon: Trophy, title: 'Live Contests', description: 'Compete in daily, weekly, and special contests against coders worldwide.' },
-    { icon: Clock, title: 'Real-Time Scoring', description: 'Instant results and live leaderboards during active competitions.' },
-    { icon: Users, title: 'Community Driven', description: 'Join a growing community of passionate programmers.' }
+    { icon: Target, href: '/practice', title: 'Untimed Practice', description: 'Drill the full question bank by difficulty and topic, with instant feedback and no clock.' },
+    { icon: Flame, href: '/daily', title: 'Daily Challenge', description: 'One puzzle a day keeps the rust away — build a streak and hold your place on the calendar.' },
+    { icon: Code2, href: '/contests', title: 'Output Prediction', description: 'Sharpen your skills by predicting outputs of carefully crafted code snippets.' },
+    { icon: Trophy, href: '/leaderboard', title: 'Leaderboard', description: 'Climb the ranks against coders worldwide and see where your score lands.' },
   ];
 
   return (
@@ -379,12 +379,18 @@ export default function Index() {
             </Link>
           )}
 
-          <div className="text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button asChild variant="hero" size="xl" className="glow-primary">
-              <Link to="/contests">
+              <Link to="/practice">
                 <Code2 className="h-5 w-5 mr-2" />
                 Start Practicing
                 <ChevronRight className="h-5 w-5 ml-1" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="xl">
+              <Link to="/daily">
+                <Flame className="h-5 w-5 mr-2" />
+                Today&apos;s Challenge
               </Link>
             </Button>
           </div>
@@ -428,7 +434,7 @@ export default function Index() {
             {features.map((feature) => (
               <Link
                 key={feature.title}
-                to="/contests"
+                to={feature.href}
                 className="group relative p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:scale-[1.03]"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
@@ -484,7 +490,18 @@ export default function Index() {
       {/* Quick Links */}
       <section className="py-12 border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Link
+              to="/practice"
+              className="group flex items-center gap-3 p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all"
+            >
+              <Code2 className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+              <div>
+                <h3 className="font-semibold">Practice</h3>
+                <p className="text-sm text-muted-foreground">Untimed drilling</p>
+              </div>
+              <ChevronRight className="h-5 w-5 ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
             <Link
               to="/contests"
               className="group flex items-center gap-3 p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all"

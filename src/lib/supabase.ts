@@ -176,3 +176,17 @@ export interface PracticeStats {
   by_difficulty: Record<string, number>;
   tags: string[];
 }
+
+/** A row returned by list_question_reports(); never exposes reporter ids. */
+export interface QuestionReport {
+  id: string;
+  question_id: string;
+  question_text: string;
+  code_block: string | null;
+  reason: string;
+  detail: string | null;
+  status: string;
+  reporter_username: string | null;
+  report_count: number;
+  created_at: string;
+}

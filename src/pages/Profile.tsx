@@ -11,7 +11,7 @@ import { StreakCard } from '@/components/daily/StreakCard';
 import { StreakCalendar } from '@/components/daily/StreakCalendar';
 import { RankBadge, getRankBadgeInfo } from '@/components/leaderboard/RankBadge';
 import { supabase } from '@/lib/supabase';
-import type { ContestResult, Contest, DailyStreak, Profile as ProfileType } from '@/lib/supabase';
+import type { ContestResult, Contest, DailyStreak, PracticeStats, Profile as ProfileType } from '@/lib/supabase';
 import { 
   User, 
   Trophy, 
@@ -109,6 +109,7 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [contestRanks, setContestRanks] = useState<Record<string, number>>({});
   const [streak, setStreak] = useState<DailyStreak | null>(null);
+  const [practice, setPractice] = useState<PracticeStats | null>(null);
 
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
@@ -145,6 +146,15 @@ export default function Profile() {
         p_user_id: targetUserId,
       });
       setStreak((streakData as unknown as DailyStreak | null) ?? null);
+
+      // get_practice_stats reads auth.uid() and ignores any caller-supplied id,
+      // so it only ever returns the signed-in user's own numbers.
+      if (isOwnProfile) {
+        const { data: practiceData } = await supabase.rpc('get_practice_stats');
+        setPractice((practiceData as PracticeStats | null) ?? null);
+      } else {
+        setPractice(null);
+      }
 
       // Fetch results
       const { data: resultsData } = await supabase
@@ -426,6 +436,71 @@ export default function Profile() {
             </div>
           )}
         </div>
+
+        {/* Practice stats — get_practice_stats only returns the caller's own row */}
+        {practice && practice.total_attempted > 0 && (
+          <div className="bg-card border border-border rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Target className="h-5 w-5 text-accent" />
+                Practice
+              </h2>
+              <Link to="/practice">
+                <Button variant="ghost" size="sm">
+                  Open Practice
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="rounded-lg bg-secondary/50 p-4 text-center">
+                <p className="text-2xl font-bold">{practice.total_attempted}</p>
+                <p className="text-xs text-muted-foreground">Attempted</p>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-4 text-center">
+                <p className="text-2xl font-bold text-glow-success">{practice.total_correct}</p>
+                <p className="text-xs text-muted-foreground">Correct</p>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-4 text-center">
+                <p className="text-2xl font-bold">{practice.accuracy}%</p>
+                <p className="text-xs text-muted-foreground">Accuracy</p>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-4 text-center">
+                <p className="text-2xl font-bold">{practice.answered_today}</p>
+                <p className="text-xs text-muted-foreground">Answered today</p>
+              </div>
+            </div>
+
+            {Object.keys(practice.by_difficulty).length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {Object.entries(practice.by_difficulty).map(([level, count]) => (
+                  <Badge key={level} variant="outline" className="text-xs">
+                    {level}: {count}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {practice.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {practice.tags.slice(0, 8).map((t) => (
+                  <span
+                    key={t}
+                    className="px-2 py-0.5 rounded-full text-[11px] bg-secondary border border-border text-muted-foreground"
+                  >
+                    {t}
+                  </span>
+                ))}
+                {practice.tags.length > 8 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-secondary border border-border text-muted-foreground">
+                    +{practice.tags.length - 8} more
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Recent Results */}
         <div className="bg-card border border-border rounded-xl p-6">

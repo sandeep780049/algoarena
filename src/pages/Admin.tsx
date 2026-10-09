@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import type { Question, Contest } from '@/lib/supabase';
-import { Plus, Edit, Trash2, Save, X, Settings, Trophy, FileText } from 'lucide-react';
+import type { Question, Contest, QuestionReport } from '@/lib/supabase';
+import { Plus, Edit, Trash2, Save, X, Settings, Trophy, FileText, Flag, Check, EyeOff, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -38,9 +38,11 @@ export default function Admin() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'questions' | 'contests'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'contests' | 'reports'>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [contests, setContests] = useState<Contest[]>([]);
+  const [reports, setReports] = useState<QuestionReport[]>([]);
+  const [reportsLoaded, setReportsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [showContestForm, setShowContestForm] = useState(false);
@@ -86,6 +88,36 @@ export default function Admin() {
     setQuestions((q as Question[]) || []);
     setContests((c as Contest[]) || []);
     setLoading(false);
+  };
+
+  // Deferred until the tab opens so the common admin path pays for nothing.
+  const fetchReports = async () => {
+    setReportsLoaded(false);
+    const { data, error } = await supabase.rpc('list_question_reports', { p_status: 'open' });
+    if (error) {
+      toast({ title: 'Could not load reports', description: error.message, variant: 'destructive' });
+    } else {
+      setReports((data as QuestionReport[]) || []);
+    }
+    setReportsLoaded(true);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'reports' && !reportsLoaded) fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, reportsLoaded]);
+
+  const resolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
+    const { error } = await supabase.rpc('update_question_report', {
+      p_report_id: id,
+      p_status: status,
+    });
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Report updated', description: `Marked ${status}.` });
+    setReports((prev) => prev.filter((r) => r.id !== id));
   };
 
   const resetQuestionForm = () => {
@@ -182,6 +214,9 @@ export default function Admin() {
         <div className="flex flex-wrap gap-2 mb-8">
           <Button variant={activeTab === 'questions' ? 'default' : 'outline'} onClick={() => setActiveTab('questions')}><FileText className="h-4 w-4 mr-2" />Questions ({questions.length})</Button>
           <Button variant={activeTab === 'contests' ? 'default' : 'outline'} onClick={() => setActiveTab('contests')}><Trophy className="h-4 w-4 mr-2" />Contests ({contests.length})</Button>
+          <Button variant={activeTab === 'reports' ? 'default' : 'outline'} onClick={() => setActiveTab('reports')}>
+            <Flag className="h-4 w-4 mr-2" />Reports {reportsLoaded ? `(${reports.length})` : ''}
+          </Button>
         </div>
 
         {activeTab === 'questions' && (
@@ -234,6 +269,63 @@ export default function Admin() {
                 </div>
               </div>
             ))}</div>
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div>
+            {!reportsLoaded ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-20 bg-secondary rounded-lg" />
+                <div className="h-20 bg-secondary rounded-lg" />
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-16 bg-card border border-border rounded-xl">
+                <Flag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-lg font-semibold mb-1">No open reports</h3>
+                <p className="text-sm text-muted-foreground">Everything is clean right now.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reports.map((r) => (
+                  <div key={r.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Badge variant="outline" className="capitalize">{r.reason.replace('_', ' ')}</Badge>
+                          <Badge className="bg-amber-500/20 text-amber-400">
+                            {r.report_count} {r.report_count === 1 ? 'reporter' : 'reporters'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(r.created_at), 'PPP p')}
+                          </span>
+                        </div>
+                        <p className="font-medium mb-2">{r.question_text}</p>
+                        {r.code_block && (
+                          <pre className="text-xs text-muted-foreground font-mono bg-secondary/50 p-2 rounded overflow-x-auto max-h-32">
+                            {r.code_block}
+                          </pre>
+                        )}
+                        {r.detail && (
+                          <p className="text-sm text-muted-foreground mt-2 italic">"{r.detail}"</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Button size="sm" onClick={() => resolveReport(r.id, 'resolved')}>
+                          <Check className="h-4 w-4 mr-1.5" />Fixed
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => resolveReport(r.id, 'dismissed')}>
+                          <EyeOff className="h-4 w-4 mr-1.5" />Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={fetchReports}>
+                  <RefreshCw className="h-4 w-4 mr-2" />Refresh
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
