@@ -5,6 +5,18 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -24,9 +36,11 @@ import type {
 import {
   ArrowRight,
   CheckCircle2,
+  Flag,
   Lightbulb,
   Loader2,
   RefreshCw,
+  Search,
   Sparkles,
   Target,
   TrendingUp,
@@ -35,6 +49,15 @@ import {
 
 const ALL = 'all';
 const PAGE_SIZE = 10;
+
+/** Reasons mirrored by the CHECK constraint on public.question_reports. */
+const REPORT_REASONS: { value: string; label: string }[] = [
+  { value: 'wrong_answer', label: 'Wrong answer marked correct' },
+  { value: 'bad_explanation', label: 'Explanation is wrong or unhelpful' },
+  { value: 'typo', label: 'Typo in the question or code' },
+  { value: 'unclear', label: 'Question is unclear' },
+  { value: 'other', label: 'Something else' },
+];
 
 const EMPTY_FILTERS: PracticeFilters = { total: 0, difficulties: [], tags: [] };
 
@@ -57,6 +80,12 @@ export default function Practice() {
   const [difficulty, setDifficulty] = useState<string>(ALL);
   const [tag, setTag] = useState<string>(ALL);
 
+  // `searchInput` is what the field holds; `search` is what has settled long
+  // enough to be worth a round trip. Keeping them separate avoids firing an RPC
+  // on every keystroke.
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -70,6 +99,11 @@ export default function Practice() {
   // re-read after every graded answer, this only drives the header live.
   const [sessionAnswered, setSessionAnswered] = useState(0);
   const [sessionCorrect, setSessionCorrect] = useState(0);
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetail, setReportDetail] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   const current = questions[index] ?? null;
   const revealed = result !== null;
@@ -96,6 +130,7 @@ export default function Practice() {
     const { data, error } = await supabase.rpc('get_practice_questions', {
       p_difficulty: difficulty,
       p_tag: tag,
+      p_search: search,
       p_limit: PAGE_SIZE,
       p_offset: 0,
     });
@@ -112,7 +147,16 @@ export default function Practice() {
     setSelected(null);
     setResult(null);
     setLoading(false);
-  }, [difficulty, tag]);
+  }, [difficulty, tag, search]);
+
+  // Debounce the search box so each keystroke does not trigger an RPC.
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === search) return;
+
+    const timer = setTimeout(() => setSearch(trimmed), 350);
+    return () => clearTimeout(timer);
+  }, [searchInput, search]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -177,6 +221,98 @@ export default function Practice() {
     setResult(null);
   };
 
+  const submitReport = async () => {
+    if (!current || !reportReason) return;
+
+    setReportSubmitting(true);
+    const { data, error } = await supabase.rpc('submit_question_report', {
+      p_question_id: current.id,
+      p_reason: reportReason,
+      p_detail: reportDetail.trim() || null,
+    });
+    setReportSubmitting(false);
+
+    if (error) {
+      toast({
+        title: 'Could not send report',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const payload = data as { error?: string; already_reported?: boolean } | null;
+    if (payload?.error) {
+      toast({ title: 'Cannot send report', description: payload.error, variant: 'destructive' });
+      return;
+    }
+
+    setReportOpen(false);
+    setReportReason('');
+    setReportDetail('');
+    toast({
+      title: payload?.already_reported ? 'Already reported' : 'Report sent',
+      description: payload?.already_reported
+        ? 'This question is already in the review queue.'
+        : 'Thanks — a moderator will take a look.',
+    });
+  };
+
+  // Keyboard shortcuts: A-D / 1-4 to pick, Enter to check or advance,
+  // N to skip. Matches the shortcuts already used on the quiz screen so the
+  // two answering surfaces behave the same way.
+  useEffect(() => {
+    if (loading || !current) return;
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      // The radio group renders focusable inputs; let Space/Enter work natively there.
+      if (target && (target.tagName === 'BUTTON' || target.tagName === 'SELECT')) {
+        if (e.key === 'Enter' || e.key === ' ') return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      if (key >= 'a' && key <= 'd') {
+        const optionIndex = key.charCodeAt(0) - 97;
+        if (optionIndex < options.length && !revealed) {
+          e.preventDefault();
+          setSelected(optionIndex);
+        }
+        return;
+      }
+
+      if (key >= '1' && key <= '4') {
+        const optionIndex = Number(key) - 1;
+        if (optionIndex < options.length && !revealed) {
+          e.preventDefault();
+          setSelected(optionIndex);
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (revealed) handleNext();
+        else if (selected !== null && !checking) handleCheck();
+        return;
+      }
+
+      if (key === 'n' && revealed) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, current, options.length, revealed, selected, checking, index, questions.length]);
+
   const sessionAccuracy = useMemo(
     () => (sessionAnswered > 0 ? Math.round((sessionCorrect / sessionAnswered) * 100) : 0),
     [sessionAnswered, sessionCorrect],
@@ -233,6 +369,23 @@ export default function Practice() {
           )}
 
           <div className="bg-card border border-border rounded-xl p-4 mb-6">
+            <div className="mb-3">
+              <label className="text-xs text-muted-foreground mb-1.5 block" htmlFor="practice-search">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="practice-search"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search prompts, code, or tags…"
+                  className="pl-9"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1.5 block" htmlFor="difficulty">
@@ -290,6 +443,7 @@ export default function Practice() {
               <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">No questions match those filters</h2>
               <p className="text-muted-foreground mb-6">
+                {search ? `Nothing found for "${search}". ` : ''}
                 Try widening the difficulty or topic selection.
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
@@ -297,6 +451,8 @@ export default function Practice() {
                   onClick={() => {
                     setDifficulty(ALL);
                     setTag(ALL);
+                    setSearchInput('');
+                    setSearch('');
                   }}
                 >
                   Clear filters
@@ -512,6 +668,92 @@ export default function Practice() {
                     ))}
                 </div>
               )}
+
+              <div className="flex items-center justify-between mt-5">
+                <p className="text-xs text-muted-foreground">
+                  <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+                    1–4
+                  </kbd>{' '}
+                  to pick ·{' '}
+                  <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+                    Enter
+                  </kbd>{' '}
+                  to check ·{' '}
+                  <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+                    N
+                  </kbd>{' '}
+                  for next
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => setReportOpen(true)}
+                >
+                  <Flag className="h-3.5 w-3.5 mr-1.5" />
+                  Report
+                </Button>
+              </div>
+
+              <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Report this question</DialogTitle>
+                    <DialogDescription>
+                      Wrong answer key, broken explanation, or a typo? Tell us so it gets fixed.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <RadioGroup
+                    value={reportReason}
+                    onValueChange={setReportReason}
+                    className="gap-2"
+                  >
+                    {REPORT_REASONS.map((r) => (
+                      <label
+                        key={r.value}
+                        htmlFor={`report-${r.value}`}
+                        className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                          reportReason === r.value
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border bg-secondary/40 hover:border-primary/40'
+                        }`}
+                      >
+                        <RadioGroupItem value={r.value} id={`report-${r.value}`} />
+                        <span className="text-sm">{r.label}</span>
+                      </label>
+                    ))}
+                  </RadioGroup>
+
+                  <div>
+                    <Label htmlFor="report-detail" className="text-xs text-muted-foreground">
+                      Anything else? (optional)
+                    </Label>
+                    <Textarea
+                      id="report-detail"
+                      value={reportDetail}
+                      onChange={(e) => setReportDetail(e.target.value)}
+                      maxLength={1000}
+                      rows={3}
+                      placeholder="What did you spot?"
+                      className="mt-1.5"
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setReportOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={submitReport}
+                      disabled={!reportReason || reportSubmitting}
+                    >
+                      {reportSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Send report
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <p className="text-center text-xs text-muted-foreground mt-6">
                 Practice does not affect your daily streak or the leaderboard.{' '}
